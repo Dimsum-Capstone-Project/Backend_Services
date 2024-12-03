@@ -1,0 +1,7 @@
+capstone_project/
+.pytest_cache/
+app/__pycache__/
+.env
+caps/
+__pycache__/
+app/ml_utils/model/

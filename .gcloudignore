@@ -1,0 +1,29 @@
+# .gcloudignore
+.gcloudignore
+.git/
+.gitignore
+env/
+caps/
+__pycache__/
+*.py[cod]
+*.so
+*.log
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/
+build/
+dist/
+*.egg-info/
+.eggs/
+List Endpoint.txt
+*.sh
+*.md
+# *.txt
+test_image/
+sql/
+*.sql
+data/
+pytest.ini
+uploads/

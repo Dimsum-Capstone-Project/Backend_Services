@@ -1,0 +1,28 @@
+# Tech: FastAPI
+# API List
+
+# AUTHENTICATION
+# 1. /api/v1/register (POST) (😭)
+# 2. /api/v1/login (POST) (👍)
+# 3. /api/v1/logout (POST) (👍)
+# 4. /api/v1/password_reset (POST) (👍)
+# 5. /api/v1/password_reset/confirm (POST) (👍)
+
+# HISTORY
+# 1. /api/v1/history (GET) (👍)
+
+# ANALYTICS
+# 1. /api/v1/analytic (GET) (👍)
+
+# PROFILE
+# 1. /api/v1/profile (GET) (👍)
+# 2. /api/v1/profile/edit (POST) (👍)
+
+# CONTACT 
+# 1. /api/v1/contact_info (GET) (👍)
+# 2. /api/v1/contact_info/add (POST) (👍)
+# 3. /api/v1/contact_info/edit (PUT) (👍)
+# 4. /api/v1/contact_info/delete (DELETE) (👍)
+
+# PALM RECOGNITION
+# 1. /api/v1/recognize_palm (POST) (IMAGE) (😭)
