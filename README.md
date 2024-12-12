@@ -40,8 +40,8 @@ Place your model file in the `app/ml_utils/model` directory.
 Create a `.env` file in the root directory and update it with your configuration:
 ```properties
 # Database Configuration
-DATABASE_URL=mysql+pymysql://user:password@db_host:db_port/palm
-FLUSH_DB=false
+DATABASE_URL=mysql+pymysql://user:password@db_host:db_port/palm # Update with your database URL
+FLUSH_DATA=false
 
 # JWT Configuration
 ACCESS_TOKEN_EXPIRE_MINUTES=30
