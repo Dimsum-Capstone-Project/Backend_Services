@@ -11,7 +11,6 @@ import os
 from dotenv import load_dotenv
 from app.storage_utils import upload_to_gcs, get_from_gcs, delete_all_files_in_gcs
 
-load_dotenv()
 
 base_dir = "app/ml_utils/data"
 raw_dir = os.path.join(base_dir, "raw")
@@ -33,10 +32,15 @@ app.include_router(profile.router, prefix="/api/v1")
 app.include_router(contact.router, prefix="/api/v1")
 app.include_router(palm_recognition.router, prefix="/api/v1")
 
+
+load_dotenv(override=True)
+
 # Create all tables in the database
 @app.on_event("startup")
 async def startup_event():
-    if os.getenv("FLUSH_DB", "false") == "true":
+    print("Creating tables...")
+    print("FLUSH_DATA", os.getenv("FLUSH_DATA", "false"))
+    if os.getenv("FLUSH_DATA", "false") == "true":
         print("Flushing database and storage...")
         Base.metadata.drop_all(bind=engine)
         Base.metadata.create_all(bind=engine)
@@ -56,21 +60,21 @@ async def startup_event():
         if os.getenv("USE_GCS", "false") == "true":
             delete_all_files_in_gcs()
             delete_all_files_in_gcs("dimsum_palm_public")
-            # upload_to_gcs("dimsum_palm_private", f"{base_dir}/palm_print_db.json", "")
+            # upload_to_gcs(f"{base_dir}/palm_print_db.json", "")
         else:
             for file in os.listdir(raw_dir):
                 os.remove(os.path.join(raw_dir, file))
 
 
-            # with open(f"{base_dir}/palm_print_db.json", "w") as f:
-            #     f.write("")
+            with open(f"{base_dir}/palm_print_db.json", "w") as f:
+                f.write("")
 
     
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=9000)
+    uvicorn.run(app, host="0.0.0.0", port=9000, log_level="debug")
 
 
 

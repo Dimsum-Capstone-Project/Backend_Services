@@ -3,15 +3,15 @@ from sqlalchemy.orm import Session
 from app.connection import get_db
 from app.models import User, Profile, ContactInfo, PalmRecognitionActivity, Analytics
 from app.dependencies import get_current_user
-from app.ml_utils.ml_utils import process_palm_image
-from app.ml_utils.preprocessing.palm_processor import PalmPreprocessor
+from app.ml_utils.ml_utils import process_palm_image, convert_to_jpg_and_return
+from app.ml_utils.preprocessing.palm_processor_enhanced import PalmPreprocessor
 from app.routers import recognizer
 from datetime import datetime
 import os
 import json
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 router = APIRouter()
 
@@ -27,11 +27,11 @@ async def recognize_palm(
     try:
         # Process uploaded image
         img, file_path, image_id = await process_palm_image(palm_image, "app/ml_utils/data/raw/recognition")
-        processed_image = preprocessor.preprocess_image(img)
+        processed_image, notes = preprocessor.preprocess_image(img)
 
         if processed_image is None:
             return Response(
-                content=json.dumps({"message": "Failed to preprocess palm image could not recognize any hand, please try again using a different image"}),
+                content=json.dumps({"message": "Failed to preprocess palm image could not recognize any hand, please try again using a different image", "notes": notes}),
                 status_code=400,
                 media_type="application/json"
             )
@@ -44,10 +44,14 @@ async def recognize_palm(
         # preprocessor.save_image(processed_image, temp_image_path)
         preprocessor.save_image(processed_image, temp_image_path)
 
+        proccessed_img = convert_to_jpg_and_return(processed_image)
+
         # Perform palm recognition
         recognizer.load_database("app/ml_utils/data/palm_print_db.json")
-        result_id, best_similarity = recognizer.find_match2(temp_image_path, threshold=float(os.getenv("PALM_THRESHOLD", 0.8)))
+        result_id, best_similarity = recognizer.find_match3(proccessed_img, threshold=float(os.getenv("PALM_THRESHOLD", 290)), use_threshold=False)
         recognizer.reset_database()
+
+        print(f"Best similarity: {best_similarity}")
 
         # Create a new PalmRecognitionActivity
         recognition_activity = PalmRecognitionActivity(
@@ -84,12 +88,12 @@ async def recognize_palm(
             contacts = db.query(ContactInfo).filter(ContactInfo.user_id == result_id).all()
 
             # if the recognized user is the same as the current user, return an error
-            if recognized_user.user_id == current_user.user_id:
-                return Response(
-                    content=json.dumps({"message": "You cannot scan yourself."}),
-                    status_code=400,
-                    media_type="application/json"
-                )
+            # if recognized_user.user_id == current_user.user_id:
+            #     return Response(
+            #         content=json.dumps({"message": "You cannot scan yourself."}),
+            #         status_code=400,
+            #         media_type="application/json"
+            #     )
 
             # Update Analytics for recognized user
             recognized_analytics = db.query(Analytics).filter(Analytics.user_id == recognized_user.user_id).first()
@@ -111,7 +115,7 @@ async def recognize_palm(
 
             return Response(
                 content=json.dumps({
-                    "confidence": f"{best_similarity * 100:.2f}%",
+                    "distance": f"{best_similarity:.2f}",
                     "user": {
                         "email": recognized_user.email,
                         "username": recognized_user.name

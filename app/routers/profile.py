@@ -11,7 +11,7 @@ import json
 from dotenv import load_dotenv
 from app.storage_utils import upload_to_gcs, get_from_gcs
 
-load_dotenv()
+load_dotenv(override=True)
 
 router = APIRouter()
 
@@ -36,7 +36,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
 
 @router.post("/profile/edit")
 async def edit_profile(
-    name: str = Form(...),
+    username: str = Form(...),
     bio: str = Form(...),
     company: str = Form(...),
     job_title: str = Form(...),
@@ -63,7 +63,7 @@ async def edit_profile(
         )
     
     # Update user and profile details
-    user.name = name
+    user.name = username
     profile.bio = bio
     profile.company = company
     profile.job_title = job_title

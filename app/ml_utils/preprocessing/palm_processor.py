@@ -51,7 +51,7 @@ import matplotlib.pyplot as plt
 from app.storage_utils import upload_to_gcs, get_from_gcs
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 # Setup logging
@@ -599,17 +599,17 @@ class PalmPreprocessor:
                 image_rgb = cv2.cvtColor(self._initial_resize(image_path), cv2.COLOR_BGR2RGB)
 
             if image_rgb is None:
-                return None
+                return None, "Failed to load image"
 
             # Deteksi landmark dulu
             landmarks, processed_image = self._detect_hand_landmarks(image_rgb)
             if landmarks is None:
-                return None
+                return None, "No hand landmarks detected"
 
             # Ekstrak ROI
             roi, bbox = self._extract_palm_roi(processed_image, landmarks)
             if roi is None:
-                return None
+                return None, "Failed to extract palm ROI"
 
             # Sekarang periksa kecerahan pada ROI yang sudah di-crop
             is_valid, brightness, sharpness, status = self._check_image_quality(roi)
@@ -618,15 +618,16 @@ class PalmPreprocessor:
             if not is_valid:
                 logger.error(status)
                 logger.error("Preprocessing dihentikan karena kualitas gambar tidak memenuhi syarat")
-                return None
+                return None, status
 
             # Lanjutkan preprocessing jika kecerahan ROI memenuhi syarat
             logger.info(status)
-            return self._continue_preprocessing(roi)
+            print("Preprocessing continued...")
+            return self._continue_preprocessing(roi), "Preprocessing completed"
 
         except Exception as e:
             logger.error(f"Error dalam preprocessing: {str(e)}")
-            return None
+            return None, f"Error: {str(e)}"
             
     def _continue_preprocessing(self, roi: np.ndarray) -> Optional[np.ndarray]:
         """
@@ -638,6 +639,8 @@ class PalmPreprocessor:
             return None
 
         # Resize
+        print("Resize")
         final_image = self._resize_roi(processed_roi)
+        print("Resize Done")
         return final_image
     

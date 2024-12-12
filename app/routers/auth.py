@@ -8,7 +8,7 @@ from app.security import hash_password, verify_password, create_access_token, in
 from app.schemas import RegisterRequest, LoginRequest, LogoutRequest, PasswordResetRequest, PasswordResetConfirm
 from app.email_utils import send_reset_email  # Assuming you have a utility to send emails
 from app.ml_utils.ml_utils import process_palm_image, convert_to_jpg_and_return
-from app.ml_utils.preprocessing.palm_processor import PalmPreprocessor
+from app.ml_utils.preprocessing.palm_processor_enhanced import PalmPreprocessor
 from app.routers import recognizer
 import os
 import logging
@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 import cv2
 import numpy as np
 
-load_dotenv()
+load_dotenv(override=True)
 
 router = APIRouter()
 
@@ -97,11 +97,14 @@ async def register(
             )
 
         # Preprocess image
-        processed_image = preprocessor.preprocess_image(img)
+        processed_image, notes = preprocessor.preprocess_image(img)
+        print("Notes")
+        print(notes)
+
 
         if processed_image is None:
             return Response(
-                content=json.dumps({"message": "Failed to preprocess palm image could not recognize any hand, please try again using a different image"}),
+                content=json.dumps({"message": "Failed to preprocess palm image could not recognize any hand, please try again using a different image", "notes": notes}),
                 status_code=status.HTTP_400_BAD_REQUEST,
                 media_type="application/json"
             )
@@ -115,7 +118,8 @@ async def register(
         
         # check if the image is already in the database
         recognizer.load_database("app/ml_utils/data/palm_print_db.json")  # Load the database
-        result_id, result_similarity = recognizer.find_match2(first_augmented_image, threshold=float(os.getenv("PALM_THRESHOLD", 0.8)))  # Find match for the processed image
+        print(os.getenv("PALM_THRESHOLD", 290))
+        result_id, result_similarity = recognizer.find_match3(first_augmented_image, threshold=float(os.getenv("PALM_THRESHOLD", 290)))  # Find match for the processed image
         recognizer.reset_database()  # Reset the database
 
         if result_id:
@@ -136,7 +140,7 @@ async def register(
         print(saved_paths[0])
 
         # PALM_THRESHOLD=0.8
-        result_id, result_similarity = recognizer.find_match2(first_augmented_image, threshold=float(os.getenv("PALM_THRESHOLD", 0.8)))  # Find match for the processed
+        result_id, result_similarity = recognizer.find_match3(first_augmented_image, threshold=float(os.getenv("PALM_THRESHOLD", 290)))  # Find match for the processed
 
         if result_id is None:
             return Response(
@@ -215,11 +219,13 @@ async def login_palm(
         img, img_path, image_id = await process_palm_image(palm_image, raw_login_dir)
 
         # Preprocess image
-        processed_image = preprocessor.preprocess_image(img)
+        processed_image, notes = preprocessor.preprocess_image(img)
+        print("Notes")
+        print(notes)
 
         if processed_image is None:
             return Response(
-                content=json.dumps({"message": "Failed to preprocess palm image could not recognize any hand, please try again using a different image"}),
+                content=json.dumps({"message": "Failed to preprocess palm image could not recognize any hand, please try again using a different image", "notes": notes}),
                 status_code=status.HTTP_400_BAD_REQUEST,
                 media_type="application/json"
             )
@@ -242,8 +248,10 @@ async def login_palm(
         # )
         print("Finding match")
 
+        proccessed_img = convert_to_jpg_and_return(processed_image)
+
         recognizer.load_database("app/ml_utils/data/palm_print_db.json")  # Load the database
-        result_id, best_similarity = recognizer.find_match2(temp_image_path, threshold=float(os.getenv("PALM_THRESHOLD", 0.8)))  # Find match for the processed image
+        result_id, best_similarity = recognizer.find_match3(proccessed_img, threshold=float(os.getenv("PALM_THRESHOLD", 290)), use_threshold=False)  # Find match for the processed image
         recognizer.reset_database()  # Reset the database
 
         # convert numpy float to python float
@@ -277,7 +285,7 @@ async def login_palm(
         # recognizer.append_database("app/ml_utils/data/palm_print_db.json")  # Save the updated database
 
         return Response(
-            content=json.dumps({"message": "Login successful", "confidence": f"{best_similarity * 100:.2f}%", "token": {"access_token": access_token, "token_type": "bearer"}}),
+            content=json.dumps({"message": "Login successful", "distance": f"{best_similarity:.2f}", "token": {"access_token": access_token, "token_type": "bearer"}}),
             status_code=status.HTTP_200_OK,
             media_type="application/json"
         )

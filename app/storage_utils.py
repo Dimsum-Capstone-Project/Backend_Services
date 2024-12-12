@@ -2,7 +2,7 @@ from google.cloud import storage
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 def upload_to_gcs(file_name, content, bucket_name=None):
     # Inisialisasi client GCS

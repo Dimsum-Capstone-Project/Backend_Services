@@ -4,12 +4,12 @@ import cv2
 import os
 from datetime import datetime
 import uuid
-from app.ml_utils.preprocessing.palm_processor import PalmPreprocessor
+from app.ml_utils.preprocessing.palm_processor_enhanced import PalmPreprocessor
 import logging
 from app.storage_utils import upload_to_gcs, get_from_gcs
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 print("Hello World")

@@ -10,7 +10,7 @@ import time
 from app.storage_utils import upload_to_gcs, get_from_gcs
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 def build_base_network(input_shape=(128, 128, 1)):
     """Build the base network for feature extraction"""
@@ -175,6 +175,7 @@ class PalmPrintRecognizer:
         if os.getenv("USE_GCS", "false") == "true":
             content = get_from_gcs(db_path)
 
+            # cek if content is json or not
             if content is None:
                 db_dict = {}
             else:
@@ -216,11 +217,26 @@ class PalmPrintRecognizer:
         
         # Compute Euclidean distance
         euclidean_distance = np.sqrt(np.sum((emb1 - emb2) ** 2))
+        print(f"Euclidean distance: {euclidean_distance}")
         
         # Convert distance to similarity score (0 to 1) with steeper exponential decay
         similarity = np.exp(-2 * euclidean_distance)  # Increased decay factor
         
         return similarity
+    
+    def compute_distance(self, embedding1, embedding2):
+        """
+        Compute similarity between two embeddings using Euclidean distance
+        """
+        # Convert to numpy arrays if they aren't already
+        emb1 = np.array(embedding1)
+        emb2 = np.array(embedding2)
+        
+        # Compute Euclidean distance
+        euclidean_distance = np.sqrt(np.sum((emb1 - emb2) ** 2))
+        print(f"Euclidean distance: {euclidean_distance}")
+        
+        return euclidean_distance
     
     def find_match2(self, image, threshold: float = 0.7) -> Tuple[str, float]:  
         """Find matching person in database with improved validation"""
@@ -231,11 +247,11 @@ class PalmPrintRecognizer:
         # Store all similarity scores
         similarities = []
         for person_id, embeddings_list in self.embedding_db.items():
-            # print(f"Person ID: {person_id}")
+            print(f"Person ID: {person_id}")
             for stored_embedding in embeddings_list:
                 similarity = self.compute_similarity2(query_embedding, stored_embedding)
                 similarities.append((person_id, similarity))
-                # print(f"Similarity: {similarity * 100:.2f}%")
+                print(f"Similarity: {similarity * 100:.2f}%")
         
         # # Sort by similarity score
         similarities.sort(key=lambda x: x[1], reverse=True)
@@ -284,6 +300,40 @@ class PalmPrintRecognizer:
                     return None, best_similarity
         
         return best_match, best_similarity
+    
+    def find_match3(self, image, threshold: float = 290) -> Tuple[str, float]:  
+        """Find matching person in database with improved validation"""
+
+        
+        query_embedding = self.get_embedding(image)
+        print("query_embedding")
+        
+        # Store all distances scores
+        distances = []
+        print("distances")
+        for person_id, embeddings_list in self.embedding_db.items():
+            print(f"Person ID: {person_id}")
+            distance_temp = 0
+            for stored_embedding in embeddings_list:
+                distance = self.compute_distance(query_embedding, stored_embedding)
+                distance_temp += distance
+                print(f"distance: {distance}")
+            distances.append((person_id, distance_temp))
+            print(f"distance_temp: {distance_temp}")
+        
+        # sort by distance
+
+
+        distances.sort(key=lambda x: x[1])
+
+        if not distances:
+            return None, 0.0
+
+        best_match, best_distance = distances[0]
+        if best_distance > threshold:
+            return None, best_distance
+        
+        return best_match, best_distance
 
     def find_match(self, image, threshold: float = 0.5) -> Tuple[str, float]:
         time_start = time.time()

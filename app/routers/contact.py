@@ -25,7 +25,7 @@ async def get_contact_info(db: Session = Depends(get_db), current_user: str = De
     if not contact_infos:
         return Response(
             content=json.dumps({"detail": "No contact information found for the user."}),
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=200,
             media_type="application/json"
         )
     return Response(content=json.dumps({
