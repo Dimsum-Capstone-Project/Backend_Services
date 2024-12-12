@@ -27,3 +27,4 @@ sql/
 data/
 pytest.ini
 uploads/
+dump/

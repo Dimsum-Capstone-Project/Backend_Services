@@ -5,3 +5,5 @@ app/__pycache__/
 caps/
 __pycache__/
 app/ml_utils/model/
+dump/
+app/ml_utils/download/
